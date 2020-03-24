@@ -113,6 +113,10 @@ public class UserGroupInformation {
   private static boolean shouldRenewImmediatelyForTests = false;
   static final String HADOOP_USER_NAME = "HADOOP_USER_NAME";
   static final String HADOOP_PROXY_USER = "HADOOP_PROXY_USER";
+  static final String HADOOP_DISABLE_RENEWAL_THREADS = "HADOOP_DISABLE_RENEWAL_THREADS";
+
+  private static final boolean disableRenewalThreads
+          = System.getenv(HADOOP_DISABLE_RENEWAL_THREADS) != null && "true".equalsIgnoreCase(System.getenv(HADOOP_DISABLE_RENEWAL_THREADS));
 
   /**
    * For the purposes of unit tests, we want to test login
@@ -882,7 +886,8 @@ public class UserGroupInformation {
   @InterfaceStability.Unstable
   @VisibleForTesting
   void spawnAutoRenewalThreadForUserCreds(boolean force) {
-    if (!force && (!shouldRelogin() || isFromKeytab())) {
+    if (disableRenewalThreads || !force && (!shouldRelogin() || isFromKeytab())) {
+      LOG.debug("AutoRenewalThreadForUserCreds doesn't start");
       return;
     }
 
@@ -902,7 +907,8 @@ public class UserGroupInformation {
    * keytab file.
    */
   private void spawnAutoRenewalThreadForKeytab() {
-    if (!shouldRelogin() || isFromTicket()) {
+    if (disableRenewalThreads || !shouldRelogin() || isFromTicket()) {
+      LOG.debug("AutoRenewalThreadForKeytab doesn't start");
       return;
     }
 
